@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.TeamFoundation;
 using Microsoft.TeamFoundation.Client;
 using Microsoft.TeamFoundation.Framework.Client;
 using Microsoft.TeamFoundation.Framework.Common;
@@ -65,19 +66,28 @@ namespace WorkItemSetField
 
         private static void ConnectToTfs()
         {
-            var serverUri = new Uri("https://<your tfs url here>");
+            var serverUri = new Uri("https://tfsclient.sep.com:8383/tfs/Collection02");
             Console.WriteLine("Connecting to " + serverUri);
 
-            _tfs = new TfsTeamProjectCollection(serverUri);
+            try
+            {
+                _tfs = new TfsTeamProjectCollection(serverUri);
 
-            // Get the identity to impersonate
-            var ims = _tfs.GetService<IIdentityManagementService>();
+                // Get the identity to impersonate
+                var ims = _tfs.GetService<IIdentityManagementService>();
 
-            var identity = ims.ReadIdentity(IdentitySearchFactor.AccountName, @"OC\tfs_user",
-               MembershipQuery.None, ReadIdentityOptions.None); 
+                var identity = ims.ReadIdentity(IdentitySearchFactor.AccountName, @"OC\tfs_user",
+                   MembershipQuery.None, ReadIdentityOptions.None);
 
-            _tfs = new TfsTeamProjectCollection(serverUri, identity.Descriptor);
-            Console.WriteLine("Connected");
+                _tfs = new TfsTeamProjectCollection(serverUri, identity.Descriptor);
+                Console.WriteLine("Connected");
+            }
+            catch (TeamFoundationServiceUnavailableException)
+            {
+                Console.WriteLine("FAILED: TFS server not available");
+                Environment.Exit(-1);
+            }
+
         }
 
         private static void PrintHelp()
@@ -107,6 +117,11 @@ namespace WorkItemSetField
             catch (FieldDefinitionNotExistException)
             {
                 Console.WriteLine("Could not find the field you were looking for...");
+                Environment.Exit(-1);
+            }
+            catch (TeamFoundationServiceUnavailableException)
+            {
+                Console.WriteLine("FAILED: TFS server not available");
                 Environment.Exit(-1);
             }
 
